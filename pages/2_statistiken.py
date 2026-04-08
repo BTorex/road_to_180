@@ -54,6 +54,9 @@ tab1, tab2 = st.tabs(["🎯 Hanno", "🎯 Dominik"])
 
 for tab, player in zip([tab1, tab2], ["Hanno", "Dominik"]):
     with tab:
+        avatar_class = "avatar-h" if player == "Hanno" else "avatar-d"
+        letter = "H" if player == "Hanno" else "D"
+        st.markdown(f"<div class='avatar-container'><div class='avatar {avatar_class}'>{letter}</div></div>", unsafe_allow_html=True)
         player_df = df_filtered[df_filtered['player'] == player].copy()
         
         if not player_df.empty:
