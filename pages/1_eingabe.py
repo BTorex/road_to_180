@@ -10,46 +10,37 @@ def init_connection():
 
 supabase = init_connection()
 
-# Neuer Titel und Untertitel
 st.title("🎯 Road to 180")
 st.subheader("Darts-Tracker")
 
-# Datumsauswahl im deutschen Format
-selected_date = st.date_input("Spieldatum auswählen", format="DD.MM.YYYY")
+selected_date = st.date_input("📅 Spieldatum", format="DD.MM.YYYY")
 
-st.write("### Neue Averages eintragen")
-col1, col2 = st.columns(2)
+st.write("### ✍️ Averages eintragen")
 
-with col1:
-    st.write("#### Hanno")
-    hanno_avg = st.number_input("3er Schnitt Hanno", min_value=0.0, max_value=180.0, step=0.1)
-    if st.button("Für Hanno speichern"):
+# Mobile-Optimierung: Tabs statt Spalten
+tab1, tab2 = st.tabs(["🎯 Hanno", "🎯 Dominik"])
+
+with tab1:
+    hanno_avg = st.number_input("Schnitt (Hanno)", min_value=0.0, max_value=180.0, step=0.1, key="h_avg")
+    # Mobile-Optimierung: Großer Button
+    if st.button("Speichern für Hanno", use_container_width=True, type="primary"):
         supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Hanno", "average": hanno_avg}).execute()
-        st.success(f"Gespeichert! (Schnitt: {hanno_avg})")
+        st.success(f"Gespeichert! ({hanno_avg})")
 
-with col2:
-    st.write("#### Dominik")
-    dominik_avg = st.number_input("3er Schnitt Dominik", min_value=0.0, max_value=180.0, step=0.1)
-    if st.button("Für Dominik speichern"):
+with tab2:
+    dominik_avg = st.number_input("Schnitt (Dominik)", min_value=0.0, max_value=180.0, step=0.1, key="d_avg")
+    if st.button("Speichern für Dominik", use_container_width=True, type="primary"):
         supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Dominik", "average": dominik_avg}).execute()
-        st.success(f"Gespeichert! (Schnitt: {dominik_avg})")
+        st.success(f"Gespeichert! ({dominik_avg})")
 
 st.divider()
-st.subheader("📊 Unsere Historie")
-response = supabase.table("dart_averages").select("*").order("play_date", desc=True).execute()
+st.subheader("📊 Letzte Einträge")
+
+# Mobile-Optimierung: Nur die letzten 10 Einträge laden, um endloses Scrollen zu vermeiden
+response = supabase.table("dart_averages").select("*").order("play_date", desc=True).limit(10).execute()
 
 if response.data:
     df = pd.DataFrame(response.data)
-    
-    # Datum in deutsches Format umwandeln (TT.MM.JJJJ)
     df['play_date'] = pd.to_datetime(df['play_date']).dt.strftime('%d.%m.%Y')
-    
-    # Sprechende Spaltennamen für die Tabelle
-    df_display = df.rename(columns={
-        "play_date": "Datum",
-        "player": "Spieler",
-        "average": "3er Schnitt"
-    })
-    
-    # Tabelle anzeigen (ohne störenden Index)
+    df_display = df.rename(columns={"play_date": "Datum", "player": "Spieler", "average": "3er Schnitt"})
     st.dataframe(df_display[["Datum", "Spieler", "3er Schnitt"]], use_container_width=True, hide_index=True)
