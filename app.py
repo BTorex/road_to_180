@@ -5,8 +5,8 @@ from supabase import create_client, Client
 # Supabase Verbindung herstellen und cachen
 @st.cache_resource
 def init_connection():
-    url = st.secrets["https://msthrejgamerrxipnehe.supabase.co"]
-    key = st.secrets["sb_publishable_kpMJpqn2LbDTfFzr0Pk1cw_FK6pr4xy"]
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
 supabase = init_connection()
