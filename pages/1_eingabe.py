@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-from supabase import create_client, Client
+from supabase import create_client
 
-# Supabase Verbindung herstellen und cachen
 @st.cache_resource
 def init_connection():
     url = st.secrets["SUPABASE_URL"]
@@ -11,35 +10,46 @@ def init_connection():
 
 supabase = init_connection()
 
-st.title("🎯 Darts Tracker: Hanno & Dominik")
+# Neuer Titel und Untertitel
+st.title("🎯 Road to 180")
+st.subheader("Darts-Tracker")
 
-# Datumsauswahl
-selected_date = st.date_input("Spieldatum auswählen")
+# Datumsauswahl im deutschen Format
+selected_date = st.date_input("Spieldatum auswählen", format="DD.MM.YYYY")
 
-st.subheader("Neue Averages eintragen")
+st.write("### Neue Averages eintragen")
 col1, col2 = st.columns(2)
 
-# Eingabe für Hanno
 with col1:
-    st.write("### Hanno")
+    st.write("#### Hanno")
     hanno_avg = st.number_input("3er Schnitt Hanno", min_value=0.0, max_value=180.0, step=0.1)
     if st.button("Für Hanno speichern"):
         supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Hanno", "average": hanno_avg}).execute()
-        st.success(f"Hannos Schnitt ({hanno_avg}) gespeichert!")
+        st.success(f"Gespeichert! (Schnitt: {hanno_avg})")
 
-# Eingabe für Dominik
 with col2:
-    st.write("### Dominik")
+    st.write("#### Dominik")
     dominik_avg = st.number_input("3er Schnitt Dominik", min_value=0.0, max_value=180.0, step=0.1)
     if st.button("Für Dominik speichern"):
         supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Dominik", "average": dominik_avg}).execute()
-        st.success(f"Dominiks Schnitt ({dominik_avg}) gespeichert!")
+        st.success(f"Gespeichert! (Schnitt: {dominik_avg})")
 
-# Bisherige Einträge anzeigen
+st.divider()
 st.subheader("📊 Unsere Historie")
-response = supabase.table("dart_averages").select("*").order("play_date").execute()
+response = supabase.table("dart_averages").select("*").order("play_date", desc=True).execute()
 
 if response.data:
     df = pd.DataFrame(response.data)
-    # Formatiert die Ansicht der Tabelle
-    st.dataframe(df[["play_date", "player", "average"]], use_container_width=True)
+    
+    # Datum in deutsches Format umwandeln (TT.MM.JJJJ)
+    df['play_date'] = pd.to_datetime(df['play_date']).dt.strftime('%d.%m.%Y')
+    
+    # Sprechende Spaltennamen für die Tabelle
+    df_display = df.rename(columns={
+        "play_date": "Datum",
+        "player": "Spieler",
+        "average": "3er Schnitt"
+    })
+    
+    # Tabelle anzeigen (ohne störenden Index)
+    st.dataframe(df_display[["Datum", "Spieler", "3er Schnitt"]], use_container_width=True, hide_index=True)
