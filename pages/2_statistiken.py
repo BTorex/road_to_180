@@ -146,3 +146,56 @@ st.markdown("<div style='color: #888; font-size: 0.85rem; margin-bottom: 10px;'>
 df_intra_pivot = df_intra_grouped.pivot(index='spiel_nr', columns='player', values='average').round(1)
 df_intra_pivot.index.name = 'Lag Nr.'
 st.dataframe(df_intra_pivot, use_container_width=True)
+
+# --- EXPORT & TEILEN ---
+st.divider()
+st.write("### 📤 Export & Teilen")
+st.markdown("<div style='color: #888; font-size: 0.85rem; margin-bottom: 15px;'>Lade die Tabelle des ausgewählten Zeitraums für Excel herunter oder teile eine schnelle Zusammenfassung per Mail.</div>", unsafe_allow_html=True)
+
+col_exp1, col_exp2 = st.columns(2)
+
+# 1. CSV Download vorbereiten
+@st.cache_data
+def convert_df(df):
+    # Wichtig: utf-8-sig sorgt dafür, dass Excel deutsche Umlaute und Emojis erkennt
+    return df.to_csv(index=False, sep=";").encode('utf-8-sig')
+
+csv_data = convert_df(df_table[["Datum", "player", "average", "Kommentar"]].rename(columns={"player": "Spieler", "average": "Schnitt"}))
+file_name = f"Darts_Export_{date_selection[0].strftime('%Y%m%d')}_bis_{date_selection[1].strftime('%Y%m%d')}.csv"
+
+with col_exp1:
+    st.download_button(
+        label="📥 Als CSV exportieren",
+        data=csv_data,
+        file_name=file_name,
+        mime="text/csv",
+        use_container_width=True
+    )
+
+with col_exp2:
+    import urllib.parse
+    
+    # 2. Email-Zusammenfassung generieren
+    if not df_filtered.empty:
+        h_avg = df_filtered[df_filtered['player'] == 'Hanno']['average'].mean()
+        d_avg = df_filtered[df_filtered['player'] == 'Dominik']['average'].mean()
+        
+        # Sicheres Formatieren, falls jemand noch nicht gespielt hat
+        h_text = f"{h_avg:.2f}" if pd.notna(h_avg) else "-"
+        d_text = f"{d_avg:.2f}" if pd.notna(d_avg) else "-"
+        
+        subject = f"🎯 Darts Update ({date_selection[0].strftime('%d.%m.')} - {date_selection[1].strftime('%d.%m.')})"
+        body = (
+            "Hier sind unsere neuesten Dart-Statistiken!\n\n"
+            f"Ø Hanno: {h_text}\n"
+            f"Ø Dominik: {d_text}\n\n"
+            f"Gespielte Lags in diesem Zeitraum: {len(df_filtered)}\n\n"
+            "Gesendet aus dem Road to 180 Tracker."
+        )
+        
+        # URL-Encoding für Leerzeichen und Zeilenumbrüche
+        mailto_link = f"mailto:?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
+        
+        st.link_button("📧 Zusammenfassung per Mail", mailto_link, use_container_width=True)
+    else:
+        st.button("📧 Zusammenfassung per Mail", disabled=True, use_container_width=True, help="Keine Daten im Zeitraum")
