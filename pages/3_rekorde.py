@@ -23,10 +23,9 @@ df = pd.DataFrame(response.data)
 df['play_date'] = pd.to_datetime(df['play_date']).dt.strftime('%d.%m.%Y')
 if 'comment' not in df.columns: df['comment'] = ""
 
-# Neuer Tab für die Gesamtwertung
-tab_all, tab1, tab2 = st.tabs(["🌍 Gesamtes Ranking", "🎯 Hanno", "🎯 Dominik"])
+# Symbole im Tab durch Buchstaben ersetzt
+tab_all, tab1, tab2 = st.tabs(["🌍 Gesamtes Ranking", "🔵 H", "🟠 D"])
 
-# Funktion zum Zeichnen der Karten
 def draw_leaderboard(dataframe, limit=5, show_avatar=False):
     top_df = dataframe.nlargest(limit, 'average')
     for i, row in enumerate(top_df.itertuples(), 1):
