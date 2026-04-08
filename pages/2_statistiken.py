@@ -168,3 +168,22 @@ fig_intra.update_layout(
 fig_intra.update_xaxes(showgrid=False)
 fig_intra.update_yaxes(showgrid=True, gridcolor='rgba(150,150,150,0.1)')
 st.plotly_chart(fig_intra, use_container_width=True)
+
+# --- DETAILTABELLE MIT KOMMENTAREN ---
+st.divider()
+st.write("### 📋 Alle Spiele im Zeitraum (Details)")
+
+# Kommentar-Spalte sicherstellen
+if 'comment' not in df_filtered.columns:
+    df_filtered['comment'] = ""
+
+df_table = df_filtered.sort_values(by=['play_date', 'id'], ascending=[False, False])
+df_table['Datum'] = df_table['play_date'].dt.strftime('%d.%m.%Y')
+df_table['Kommentar'] = df_table['comment'].fillna("")
+
+df_display = df_table.rename(columns={"player": "Spieler", "average": "Schnitt"})
+st.dataframe(
+    df_display[["Datum", "Spieler", "Schnitt", "Kommentar"]], 
+    use_container_width=True, 
+    hide_index=True
+)
