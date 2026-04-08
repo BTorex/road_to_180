@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from supabase import create_client
+from supabase import create_client, Client
 
+# Supabase Verbindung herstellen und cachen
 @st.cache_resource
 def init_connection():
     url = st.secrets["SUPABASE_URL"]
@@ -11,51 +11,35 @@ def init_connection():
 
 supabase = init_connection()
 
-st.title("📊 Performance & Statistiken")
+st.title("🎯 Darts Tracker: Hanno & Dominik")
 
-# Daten aus Supabase abrufen
-response = supabase.table("dart_averages").select("*").order("play_date").execute()
+# Datumsauswahl
+selected_date = st.date_input("Spieldatum auswählen")
 
-if not response.data:
-    st.info("Noch keine Daten vorhanden. Tragt zuerst ein paar Averages ein!")
-    st.stop()
-
-# Datenaufbereitung mit Pandas
-df = pd.DataFrame(response.data)
-df['play_date'] = pd.to_datetime(df['play_date'])
-
-st.subheader("🏆 Key Performance Indicators")
+st.subheader("Neue Averages eintragen")
 col1, col2 = st.columns(2)
 
-# KPIs für beide Spieler berechnen
-for idx, player in enumerate(["Hanno", "Dominik"]):
-    player_df = df[df['player'] == player]
-    
-    with (col1 if idx == 0 else col2):
-        st.write(f"### {player}")
-        if not player_df.empty:
-            avg_alltime = player_df['average'].mean()
-            max_avg = player_df['average'].max()
-            games_played = len(player_df)
-            
-            st.metric("Gesamtschnitt", f"{avg_alltime:.2f}")
-            st.metric("Höchster Schnitt", f"{max_avg:.2f}")
-            st.caption(f"Basierend auf {games_played} Einträgen")
-        else:
-            st.write("Noch keine Spiele.")
+# Eingabe für Hanno
+with col1:
+    st.write("### Hanno")
+    hanno_avg = st.number_input("3er Schnitt Hanno", min_value=0.0, max_value=180.0, step=0.1)
+    if st.button("Für Hanno speichern"):
+        supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Hanno", "average": hanno_avg}).execute()
+        st.success(f"Hannos Schnitt ({hanno_avg}) gespeichert!")
 
-st.divider()
+# Eingabe für Dominik
+with col2:
+    st.write("### Dominik")
+    dominik_avg = st.number_input("3er Schnitt Dominik", min_value=0.0, max_value=180.0, step=0.1)
+    if st.button("Für Dominik speichern"):
+        supabase.table("dart_averages").insert({"play_date": str(selected_date), "player": "Dominik", "average": dominik_avg}).execute()
+        st.success(f"Dominiks Schnitt ({dominik_avg}) gespeichert!")
 
-# Liniendiagramm: Verlauf über Zeit
-st.subheader("📈 Entwicklung über Zeit")
-fig_line = px.line(df, x='play_date', y='average', color='player', markers=True, 
-                   title="3er Schnitt Verlauf", labels={"play_date": "Datum", "average": "3er Schnitt", "player": "Spieler"})
-fig_line.update_traces(line=dict(width=3), marker=dict(size=8))
-st.plotly_chart(fig_line, use_container_width=True)
+# Bisherige Einträge anzeigen
+st.subheader("📊 Unsere Historie")
+response = supabase.table("dart_averages").select("*").order("play_date").execute()
 
-# Boxplot: Konstanz / Streuung
-st.subheader("🎯 Konstanz (Streuung der Würfe)")
-st.write("Ein kleinerer Boxplot bedeutet, dass der Spieler konstanter wirft. Ausreißer nach oben oder unten werden als einzelne Punkte dargestellt.")
-fig_box = px.box(df, x='player', y='average', color='player', 
-                 title="Verteilung der Averages", labels={"average": "3er Schnitt", "player": "Spieler"})
-st.plotly_chart(fig_box, use_container_width=True)
+if response.data:
+    df = pd.DataFrame(response.data)
+    # Formatiert die Ansicht der Tabelle
+    st.dataframe(df[["play_date", "player", "average"]], use_container_width=True)
