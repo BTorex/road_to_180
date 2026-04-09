@@ -40,13 +40,13 @@ html, body, [class*="css"] {
 }
 
 .block-container {
-    padding-top: 1.1rem;
+    padding-top: 1.0rem;
     padding-bottom: 2rem;
-    max-width: 1240px;
+    max-width: 1260px;
 }
 
 .page-title {
-    font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.4rem);
+    font-size: clamp(1.55rem, 1.15rem + 1.2vw, 2.35rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     margin-bottom: 0.2rem;
@@ -99,10 +99,7 @@ html, body, [class*="css"] {
 .avatar-h { background: linear-gradient(135deg, #3c8dff, #60b5ff); }
 .avatar-d { background: linear-gradient(135deg, #ff8d3a, #ffb066); }
 
-.small-muted {
-    color: var(--muted);
-    font-size: 0.82rem;
-}
+.small-muted { color: var(--muted); font-size: 0.82rem; }
 
 .record-card {
     background: rgba(255,255,255,0.06);
