@@ -28,8 +28,9 @@ st.markdown("""
     --text: #f5f5f7;
     --muted: #a1a1aa;
     --red: #FF3B30;
+    --red-soft: #ff6b63;
     --green: #34C759;
-    --white: rgba(255,255,255,0.92);
+    --green-soft: #62dd84;
 }
 html, body, [class*="css"] {
     font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -50,13 +51,13 @@ header[data-testid="stHeader"] {
     display: none !important;
 }
 .block-container {
-    padding-top: 6rem !important;
+    padding-top: 5.7rem !important;
     padding-bottom: 2rem !important;
     max-width: 1180px;
 }
 @media (max-width: 768px) {
     .block-container {
-        padding-top: 6.6rem !important;
+        padding-top: 6.2rem !important;
         padding-left: .9rem !important;
         padding-right: .9rem !important;
         max-width: 100%;
@@ -89,7 +90,7 @@ header[data-testid="stHeader"] {
     font-weight: 800;
     margin-bottom: .55rem;
 }
-.hero-panel, .glass-card, .input-shell, .record-card {
+.hero-panel, .glass-card, .input-shell, .record-card, .empty-state {
     background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 24px;
@@ -97,7 +98,7 @@ header[data-testid="stHeader"] {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
-.hero-panel, .glass-card, .input-shell {
+.hero-panel, .glass-card, .input-shell, .empty-state {
     padding: 1rem 1.05rem;
     margin-bottom: 1rem;
 }
@@ -114,6 +115,15 @@ header[data-testid="stHeader"] {
     margin-bottom: 1rem;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+}
+.records-hero {
+    background: linear-gradient(135deg, rgba(255,59,48,0.18), rgba(255,255,255,0.06));
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 28px;
+    padding: 1.15rem 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.24);
+    backdrop-filter: blur(20px);
 }
 .hero-value {
     font-size: clamp(2.1rem, 1.7rem + 1.5vw, 3.2rem);
@@ -152,8 +162,8 @@ header[data-testid="stHeader"] {
     color: white;
 }
 .avatar-fallback {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     border-radius: 999px;
     display: flex;
     align-items: center;
@@ -163,6 +173,31 @@ header[data-testid="stHeader"] {
 }
 .avatar-h { background: linear-gradient(135deg, #FF3B30, #ff7a73); }
 .avatar-d { background: linear-gradient(135deg, #34C759, #5ee38c); }
+.avatar-input {
+    width: 74px;
+    height: 74px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.12);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.empty-state {
+    text-align: center;
+}
+.empty-icon {
+    font-size: 2rem;
+    margin-bottom: .35rem;
+}
+.success-chip {
+    display: inline-block;
+    padding: .3rem .65rem;
+    border-radius: 999px;
+    background: rgba(52,199,89,0.16);
+    border: 1px solid rgba(52,199,89,0.28);
+    color: #bff3cc;
+    font-size: .82rem;
+    font-weight: 700;
+}
 [data-testid="stMetric"] {
     background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
     border: 1px solid rgba(255,255,255,0.10);
@@ -179,9 +214,22 @@ header[data-testid="stHeader"] {
     color: white;
     min-height: 3rem;
     font-weight: 800;
+    transition: all .18s ease;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.16);
 }
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, rgba(255,59,48,0.92), rgba(255,59,48,0.72));
+    background: linear-gradient(135deg, rgba(255,59,48,0.96), rgba(255,59,48,0.78));
+    box-shadow: 0 12px 28px rgba(255,59,48,0.25);
+}
+.stButton > button[kind="primary"]:hover {
+    background: linear-gradient(135deg, rgba(255,59,48,1), rgba(255,107,99,0.88));
+}
+.stDownloadButton > button {
+    background: linear-gradient(135deg, rgba(52,199,89,0.22), rgba(52,199,89,0.14));
+    border: 1px solid rgba(52,199,89,0.24);
 }
 .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div, textarea {
     border-radius: 18px !important;
@@ -199,7 +247,9 @@ a[aria-selected="true"] { background: rgba(255,255,255,0.14) !important; }
 """, unsafe_allow_html=True)
 
 if HEADER.exists():
+    st.markdown('<div style="max-width:760px;margin:0 auto 1rem auto;">', unsafe_allow_html=True)
     st.image(str(HEADER), use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 pages = [
     st.Page("pages/1_eingabe.py", title="Eingabe", icon="✍️", default=True),
