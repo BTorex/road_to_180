@@ -1,3 +1,4 @@
+
 from datetime import date
 from urllib.parse import quote
 import streamlit as st
@@ -28,14 +29,23 @@ st.markdown('<div class="page-title">Averages erfassen</div>', unsafe_allow_html
 st.markdown('<div class="input-shell">', unsafe_allow_html=True)
 player = st.segmented_control("Spieler", PLAYERS, default="Hanno")
 play_date = st.date_input("Datum", value=date.today())
-avg_col, info_col = st.columns([1.15, 0.85])
+avg_col, info_col = st.columns([1.05, 0.95])
 with avg_col:
     average = st.number_input("Average", min_value=0.0, max_value=180.0, step=0.1, format="%.1f")
-    st.markdown('<div class="avg-hint">Saubere Eingabe für den 3-Dart-Average mit einer Nachkommastelle.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="avg-hint">Kurz und knackig: 3-Dart-Average rein, speichern, weiter geht’s 🎯</div>', unsafe_allow_html=True)
+    comment = st.text_input("Kommentar", placeholder="z. B. Training, Liga, starker Start …")
 with info_col:
-    hero_html = f"<div class='hero-kpi'><div class='kicker'>Sofort-Check</div><div class='hero-value'>{average:.1f}</div><div class='hero-meta'>{player} · {play_date.strftime('%d.%m.%Y')}</div></div>"
-    st.markdown(hero_html, unsafe_allow_html=True)
-comment = st.text_input("Kommentar", placeholder="z. B. Training, Liga, starker Start …")
+    img = player_image(player)
+    top1, top2 = st.columns([0.34, 0.66])
+    with top1:
+        if img:
+            st.image(img, width=74)
+        else:
+            css_class = "avatar-h" if player == "Hanno" else "avatar-d"
+            st.markdown(f'<div class="avatar-fallback {css_class}" style="width:74px;height:74px;font-size:1.4rem;">{player[:1]}</div>', unsafe_allow_html=True)
+    with top2:
+        hero_html = f"<div class='hero-kpi'><div class='kicker'>Neuer Eintrag</div><div class='hero-value'>{average:.1f}</div><div class='hero-meta'>{player} · {play_date.strftime('%d.%m.%Y')}</div><div style='margin-top:.55rem;'><span class='success-chip'>Bereit zum Speichern</span></div></div>"
+        st.markdown(hero_html, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 save1, save2 = st.columns([1,1])
@@ -43,7 +53,7 @@ with save1:
     if st.button("➕ Eintrag speichern", use_container_width=True, type="primary", disabled=average <= 0):
         try:
             insert_average(play_date=play_date, player=player, average=average, comment=comment)
-            safe_toast(f"{player} mit {average:.1f} gespeichert", "🎯")
+            safe_toast("Stark! Eintrag gespeichert", "✅")
             st.rerun()
         except Exception as exc:
             st.error(f"Fehler beim Speichern: {exc}")
@@ -62,7 +72,13 @@ if not history_df.empty:
     st.download_button("CSV exportieren", data=csv_df.to_csv(index=False, sep=";", encoding="utf-8-sig").encode("utf-8-sig"), file_name="road_to_180_eingabe_export.csv", mime="text/csv", use_container_width=True)
 
 if history_df.empty:
-    st.info("Noch keine Einträge vorhanden.")
+    st.markdown("""
+    <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <div class="page-title" style="font-size:1.4rem;margin-bottom:.3rem;">Noch keine Averages drin</div>
+        <div class="small-muted">Starte mit dem ersten Eintrag. Dann füllen sich Historie, Rekorde und Statistiken ganz automatisch.</div>
+    </div>
+    """, unsafe_allow_html=True)
 else:
     st.markdown('<div class="section-label">Historie</div>', unsafe_allow_html=True)
     for _, row in history_df.iterrows():
@@ -86,7 +102,7 @@ else:
                 if st.button("💾 Speichern", use_container_width=True, key=f"save_{int(row['id'])}"):
                     try:
                         update_average(int(row['id']), new_avg, new_comment)
-                        safe_toast("Eintrag aktualisiert", "✅")
+                        safe_toast("Sauber, Update ist drin", "✅")
                         st.rerun()
                     except Exception as exc:
                         st.error(f"Fehler beim Update: {exc}")

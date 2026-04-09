@@ -46,14 +46,39 @@ def player_summary(player: str, df, color: str):
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="page-title">Rekorde</div>', unsafe_allow_html=True)
-st.markdown('<div class="small-muted" style="margin-bottom:.7rem;">Kurz erklärt: Hier siehst du eure stärksten Einzelwerte und schnellen Bestmarken auf einen Blick.</div>', unsafe_allow_html=True)
 
 df = fetch_averages()
 if df.empty:
-    st.info("Noch keine Daten vorhanden.")
+    st.markdown("""
+    <div class="empty-state">
+        <div class="empty-icon">🏆</div>
+        <div class="page-title" style="font-size:1.4rem;margin-bottom:.3rem;">Noch keine Rekorde am Start</div>
+        <div class="small-muted">Sobald ihr Averages erfasst, tauchen hier automatisch eure stärksten Würfe und Bestmarken auf.</div>
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 df = df.sort_values(["average", "play_date", "id"], ascending=[False, False, False]).reset_index(drop=True)
+best = df.iloc[0]
+best_player = str(best['player'])
+best_img = player_image(best_player)
+hero1, hero2 = st.columns([0.78, 0.22])
+with hero1:
+    st.markdown(f"""
+    <div class="records-hero">
+        <div class="kicker">All-Time Rekord</div>
+        <div class="hero-value">{float(best['average']):.1f}</div>
+        <div class="hero-meta">{html.escape(best_player)} · {format_date_de(best['play_date'])}</div>
+        <div class="small-muted" style="margin-top:.55rem;">Ganz stark. Das ist aktuell die Marke, die gejagt wird.</div>
+    </div>
+    """, unsafe_allow_html=True)
+with hero2:
+    if best_img:
+        st.image(best_img, width=92)
+    else:
+        css_class = "avatar-h" if best_player == "Hanno" else "avatar-d"
+        st.markdown(f'<div class="avatar-fallback {css_class}" style="width:92px;height:92px;font-size:1.6rem;">{html.escape(best_player[:1])}</div>', unsafe_allow_html=True)
+
 overall_tab, hanno_tab, dominik_tab = st.tabs(["Overall Top 10", "Hanno Top 5", "Dominik Top 5"])
 
 with overall_tab:
