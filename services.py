@@ -18,11 +18,28 @@ def safe_toast(message: str, icon: Optional[str] = None) -> None:
     except Exception:
         st.success(message)
 
+def format_date_de(value) -> str:
+    if pd.isna(value):
+        return "—"
+    ts = pd.to_datetime(value, errors="coerce")
+    if pd.isna(ts):
+        return "—"
+    return ts.strftime("%d.%m.%Y")
+
+def format_time_de(value) -> str:
+    if pd.isna(value):
+        return "—"
+    ts = pd.to_datetime(value, errors="coerce")
+    if pd.isna(ts):
+        return "—"
+    return ts.strftime("%H:%M")
+
 def fetch_averages(limit: int | None = None, order_desc: bool = False) -> pd.DataFrame:
     query = (
         get_supabase().table("dart_averages")
         .select("id, play_date, player, average, comment, created_at")
         .order("play_date", desc=order_desc)
+        .order("created_at", desc=order_desc)
         .order("id", desc=order_desc)
     )
     if limit is not None:
@@ -33,6 +50,10 @@ def fetch_averages(limit: int | None = None, order_desc: bool = False) -> pd.Dat
         return df
     df["play_date"] = pd.to_datetime(df["play_date"], errors="coerce")
     df["average"] = pd.to_numeric(df["average"], errors="coerce")
+    if "created_at" in df.columns:
+        df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True).dt.tz_convert("Europe/Berlin")
+    else:
+        df["created_at"] = pd.NaT
     return df.dropna(subset=["play_date", "average"]).copy()
 
 def insert_average(play_date, player: str, average: float, comment: str | None = None):
