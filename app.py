@@ -20,78 +20,122 @@ if LOGO.exists():
 st.markdown("""
 <style>
 :root {
-    --text: #f5f7fb;
-    --muted: #9aa4b2;
+    --bg: #1C1C1E;
+    --bg-soft: #232326;
+    --card: rgba(255,255,255,0.08);
+    --card-strong: rgba(255,255,255,0.12);
+    --border: rgba(255,255,255,0.10);
+    --text: #f5f5f7;
+    --muted: #a1a1aa;
+    --red: #FF3B30;
+    --green: #34C759;
+    --white: rgba(255,255,255,0.92);
 }
 html, body, [class*="css"] {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .stApp {
     background:
-        radial-gradient(circle at top left, rgba(90,168,255,0.13), transparent 28%),
-        radial-gradient(circle at top right, rgba(255,171,102,0.11), transparent 26%),
-        linear-gradient(180deg, #090b10 0%, #11151c 100%);
+        radial-gradient(circle at top left, rgba(255,59,48,0.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(52,199,89,0.12), transparent 22%),
+        linear-gradient(180deg, #111113 0%, #1C1C1E 100%);
     color: var(--text);
 }
 header[data-testid="stHeader"] {
-    background: rgba(9, 11, 16, 0.78) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(17, 17, 19, 0.72) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 [data-testid="stSidebar"], [data-testid="collapsedControl"] {
     display: none !important;
 }
 .block-container {
-    padding-top: 5.9rem !important;
+    padding-top: 6rem !important;
     padding-bottom: 2rem !important;
     max-width: 1180px;
 }
 @media (max-width: 768px) {
     .block-container {
-        padding-top: 6.5rem !important;
-        padding-left: 0.9rem !important;
-        padding-right: 0.9rem !important;
+        padding-top: 6.6rem !important;
+        padding-left: .9rem !important;
+        padding-right: .9rem !important;
         max-width: 100%;
     }
     div[data-testid="stHorizontalBlock"] {
         display: flex;
         flex-direction: column;
-        gap: 0.8rem;
+        gap: .8rem;
+    }
+    .mini-grid {
+        grid-template-columns: 1fr !important;
     }
 }
 .page-title {
-    font-size: clamp(1.45rem, 1.15rem + 1vw, 2.25rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 0.2rem;
-    line-height: 1.1;
+    font-size: clamp(1.6rem, 1.2rem + 1vw, 2.5rem);
+    font-weight: 850;
+    letter-spacing: -0.03em;
+    margin-bottom: .35rem;
+    line-height: 1.05;
 }
-.page-subtitle {
+.page-subtitle, .small-muted {
     color: var(--muted);
-    font-size: 0.98rem;
-    margin-bottom: 0.9rem;
+    font-size: .9rem;
 }
-.section-label {
+.section-label, .kicker {
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.72rem;
-    font-weight: 700;
-    margin-bottom: 0.65rem;
+    letter-spacing: .14em;
+    font-size: .72rem;
+    font-weight: 800;
+    margin-bottom: .55rem;
 }
-.hero-panel {
-    background: linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.05));
+.hero-panel, .glass-card, .input-shell, .record-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.hero-panel, .glass-card, .input-shell {
     padding: 1rem 1.05rem;
-    box-shadow: 0 14px 34px rgba(0,0,0,0.20);
+    margin-bottom: 1rem;
 }
 .record-card {
-    background: rgba(255,255,255,0.06);
+    padding: .95rem 1rem;
+    margin-bottom: .8rem;
+}
+.hero-kpi {
+    background: linear-gradient(135deg, rgba(255,59,48,0.18), rgba(52,199,89,0.10));
     border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 20px;
-    padding: 0.95rem 1rem;
-    margin-bottom: 0.8rem;
+    border-radius: 26px;
+    padding: 1.15rem;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+    margin-bottom: 1rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.hero-value {
+    font-size: clamp(2.1rem, 1.7rem + 1.5vw, 3.2rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+.hero-meta {
+    color: var(--muted);
+    margin-top: .45rem;
+    font-size: .92rem;
+}
+.avg-hint {
+    color: var(--muted);
+    font-size: .85rem;
+    margin-top: -.25rem;
+    margin-bottom: .75rem;
+}
+.mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .8rem;
 }
 .rank-chip {
     width: 34px;
@@ -104,8 +148,8 @@ header[data-testid="stHeader"] {
     background: rgba(255,255,255,0.08);
 }
 .rank-top {
-    background: linear-gradient(135deg, #f6c453, #ffde7a);
-    color: #262626;
+    background: linear-gradient(135deg, #ffb199, #FF3B30);
+    color: white;
 }
 .avatar-fallback {
     width: 46px;
@@ -117,29 +161,31 @@ header[data-testid="stHeader"] {
     font-weight: 800;
     color: white;
 }
-.avatar-h { background: linear-gradient(135deg, #3c8dff, #60b5ff); }
-.avatar-d { background: linear-gradient(135deg, #ff8d3a, #ffb066); }
-.small-muted { color: var(--muted); font-size: 0.82rem; }
+.avatar-h { background: linear-gradient(135deg, #FF3B30, #ff7a73); }
+.avatar-d { background: linear-gradient(135deg, #34C759, #5ee38c); }
 [data-testid="stMetric"] {
-    background: rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 20px;
-    padding: 0.85rem 1rem;
+    padding: .9rem 1rem;
     box-shadow: 0 10px 25px rgba(0,0,0,0.16);
 }
 [data-testid="stMetricLabel"] { color: var(--muted); }
-[data-testid="stMetricValue"] { font-weight: 800; letter-spacing: -0.03em; }
+[data-testid="stMetricValue"] { font-weight: 850; letter-spacing: -0.04em; }
 .stButton > button, .stDownloadButton > button {
-    border-radius: 16px;
+    border-radius: 18px;
     border: 1px solid rgba(255,255,255,0.10);
-    background: rgba(255,255,255,0.08);
+    background: linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.06));
     color: white;
-    min-height: 2.9rem;
-    font-weight: 700;
+    min-height: 3rem;
+    font-weight: 800;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, rgba(255,59,48,0.92), rgba(255,59,48,0.72));
 }
 .stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div, textarea {
-    border-radius: 16px !important;
-    background: rgba(255,255,255,0.06) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,0.07) !important;
     border: 1px solid rgba(255,255,255,0.10) !important;
 }
 div[data-baseweb="tab-list"] { gap: 0.45rem; flex-wrap: wrap; }
