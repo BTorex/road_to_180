@@ -1,4 +1,3 @@
-
 from datetime import date
 from urllib.parse import quote
 import streamlit as st
@@ -26,12 +25,18 @@ def confirm_delete_dialog(row_id: int, label: str):
             st.rerun()
 
 st.markdown('<div class="page-title">Averages erfassen</div>', unsafe_allow_html=True)
-
+st.markdown('<div class="input-shell">', unsafe_allow_html=True)
 player = st.segmented_control("Spieler", PLAYERS, default="Hanno")
 play_date = st.date_input("Datum", value=date.today())
-average = st.number_input("Average", min_value=0.0, max_value=180.0, step=0.1, format="%.1f")
-st.markdown(f'<div style="margin-top:-0.25rem;margin-bottom:0.75rem;color:#9aa4b2;font-size:0.85rem;">Ziel: stabiler 3-Dart-Average, Eingabe mit einer Nachkommastelle.</div>', unsafe_allow_html=True)
+avg_col, info_col = st.columns([1.15, 0.85])
+with avg_col:
+    average = st.number_input("Average", min_value=0.0, max_value=180.0, step=0.1, format="%.1f")
+    st.markdown('<div class="avg-hint">Saubere Eingabe für den 3-Dart-Average mit einer Nachkommastelle.</div>', unsafe_allow_html=True)
+with info_col:
+    hero_html = f"<div class='hero-kpi'><div class='kicker'>Sofort-Check</div><div class='hero-value'>{average:.1f}</div><div class='hero-meta'>{player} · {play_date.strftime('%d.%m.%Y')}</div></div>"
+    st.markdown(hero_html, unsafe_allow_html=True)
 comment = st.text_input("Kommentar", placeholder="z. B. Training, Liga, starker Start …")
+st.markdown('</div>', unsafe_allow_html=True)
 
 save1, save2 = st.columns([1,1])
 with save1:
@@ -44,7 +49,6 @@ with save1:
             st.error(f"Fehler beim Speichern: {exc}")
 
 history_df = fetch_averages(limit=50, order_desc=True)
-
 with save2:
     if not history_df.empty:
         mail_subject = quote("Road to 180 – Export Eingabe")
@@ -60,6 +64,7 @@ if not history_df.empty:
 if history_df.empty:
     st.info("Noch keine Einträge vorhanden.")
 else:
+    st.markdown('<div class="section-label">Historie</div>', unsafe_allow_html=True)
     for _, row in history_df.iterrows():
         player_name = row["player"]
         label = f"{format_date_de(row['play_date'])} · {player_name} · {float(row['average']):.1f}"
@@ -72,23 +77,10 @@ else:
             with meta2:
                 st.markdown(f"**{player_name}**")
                 st.caption(f"Spieltag: {format_date_de(row['play_date'])} · Erfasst: {format_time_de(row['created_at'])} Uhr")
-                if row.get('comment'):
+                if row.get('comment') and str(row.get('comment')).lower() != 'nan':
                     st.write(row['comment'])
-
-            new_avg = st.number_input(
-                f"Average aktualisieren #{int(row['id'])}",
-                min_value=0.0,
-                max_value=180.0,
-                value=float(row['average']),
-                step=0.1,
-                format="%.1f",
-                key=f"avg_{int(row['id'])}",
-            )
-            new_comment = st.text_input(
-                f"Kommentar #{int(row['id'])}",
-                value=row['comment'] if row['comment'] else "",
-                key=f"comment_{int(row['id'])}",
-            )
+            new_avg = st.number_input(f"Average aktualisieren #{int(row['id'])}", min_value=0.0, max_value=180.0, value=float(row['average']), step=0.1, format="%.1f", key=f"avg_{int(row['id'])}")
+            new_comment = st.text_input(f"Kommentar #{int(row['id'])}", value="" if not row['comment'] or str(row['comment']).lower() == 'nan' else row['comment'], key=f"comment_{int(row['id'])}")
             b1, b2 = st.columns(2)
             with b1:
                 if st.button("💾 Speichern", use_container_width=True, key=f"save_{int(row['id'])}"):
