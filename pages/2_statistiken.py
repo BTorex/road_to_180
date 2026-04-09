@@ -164,6 +164,7 @@ with hero_right:
     period_html = f"<div class='glass-card'><div class='kicker'>Zeitraum</div><div style='font-size:1.4rem;font-weight:800;'>{latest_day}</div><div class='hero-meta'>Letzter Spieltag · {total_sessions} Einträge im Filter</div></div>"
     st.markdown(period_html, unsafe_allow_html=True)
 
+st.markdown('<div class="small-muted" style="margin-bottom:.6rem;">Kurz erklärt: Diese Werte zeigen Tages-Peaks und ob die Form über mehrere Einträge steigt oder fällt.</div>', unsafe_allow_html=True)
 kpi_block('Leistung', [
     ('Hanno Best-of-Day', '—' if h_df.empty else f"{h_df.groupby('play_date')['average'].max().mean():.1f}"),
     ('Dominik Best-of-Day', '—' if d_df.empty else f"{d_df.groupby('play_date')['average'].max().mean():.1f}"),
@@ -171,6 +172,7 @@ kpi_block('Leistung', [
     ('Dominik Rolling Improvement', '—' if pd.isna(roll_d) else f"{roll_d:+.1f}"),
 ])
 
+st.markdown('<div class="small-muted" style="margin-top:-.2rem;margin-bottom:.6rem;">Kurz erklärt: Serien zeigen, ob zuletzt mehrere Verbesserungen oder Rückgänge am Stück passiert sind.</div>', unsafe_allow_html=True)
 kpi_block('Serien', [
     ('Hanno Streak', f"{streak_h} · {streak_h_n}"),
     ('Dominik Streak', f"{streak_d} · {streak_d_n}"),
@@ -180,12 +182,16 @@ kpi_block('Serien', [
 
 chart_a, chart_b = st.columns([1.1, 0.9])
 with chart_a:
+    st.markdown('<div class="small-muted" style="margin-bottom:.35rem;">Rolling Form glättet Schwankungen und zeigt den echten Trend.</div>', unsafe_allow_html=True)
     st.plotly_chart(make_form_chart(filtered), use_container_width=True)
+    st.markdown('<div class="small-muted" style="margin-bottom:.35rem;">Best of Day zeigt den besten Average pro Spieltag.</div>', unsafe_allow_html=True)
     st.plotly_chart(make_best_day_chart(filtered), use_container_width=True)
 with chart_b:
+    st.markdown('<div class="small-muted" style="margin-bottom:.35rem;">Hot / Cold macht sichtbar, ob die letzte Phase eher heiß oder zäh läuft.</div>', unsafe_allow_html=True)
     st.plotly_chart(make_streak_chart(filtered), use_container_width=True)
     sess_fig = make_session_chart(filtered)
     if sess_fig is not None:
+        st.markdown('<div class="small-muted" style="margin-bottom:.35rem;">Session-Vergleich zeigt, zu welcher Tageszeit ihr am stärksten seid.</div>', unsafe_allow_html=True)
         st.plotly_chart(sess_fig, use_container_width=True)
 
 st.markdown('<div class="section-label">Export</div>', unsafe_allow_html=True)
