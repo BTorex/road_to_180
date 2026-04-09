@@ -1,7 +1,7 @@
 from datetime import date
 import pandas as pd
 import streamlit as st
-from supabase import create_client, Client
+from supabase import Client, create_client
 
 PLAYERS = ["Hanno", "Dominik"]
 
@@ -10,6 +10,18 @@ def init_connection() -> Client:
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 supabase = init_connection()
+
+if "selected_edit_id" not in st.session_state:
+    st.session_state.selected_edit_id = None
+if "confirm_delete_id" not in st.session_state:
+    st.session_state.confirm_delete_id = None
+
+
+def safe_toast(msg: str, icon: str | None = None):
+    try:
+        st.toast(msg, icon=icon)
+    except Exception:
+        st.success(msg)
 
 
 def load_history(limit: int = 30) -> pd.DataFrame:
@@ -20,7 +32,12 @@ def load_history(limit: int = 30) -> pd.DataFrame:
         .limit(limit)
         .execute()
     )
-    return pd.DataFrame(response.data or [])
+    df = pd.DataFrame(response.data or [])
+    if df.empty:
+        return df
+    df["play_date"] = pd.to_datetime(df["play_date"])
+    df["average"] = pd.to_numeric(df["average"], errors="coerce")
+    return df
 
 
 def insert_average(play_date: date, player: str, average: float, comment: str | None):
@@ -30,20 +47,41 @@ def insert_average(play_date: date, player: str, average: float, comment: str | 
         "average": float(average),
         "comment": comment or None,
     }
-    supabase.table("dart_averages").insert(payload).execute()
+    return supabase.table("dart_averages").insert(payload).execute()
 
 
 def update_average(row_id: int, average: float, comment: str | None):
     payload = {"average": float(average), "comment": comment or None}
-    supabase.table("dart_averages").update(payload).eq("id", row_id).execute()
+    return supabase.table("dart_averages").update(payload).eq("id", row_id).execute()
 
 
 def delete_average(row_id: int):
-    supabase.table("dart_averages").delete().eq("id", row_id).execute()
+    return supabase.table("dart_averages").delete().eq("id", row_id).execute()
+
+
+@st.dialog("Löschen bestätigen")
+def confirm_delete_dialog(row_id: int, label: str):
+    st.write(f"Möchtest du den Eintrag wirklich löschen?
+
+**{label}**")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Ja, löschen", use_container_width=True, type="primary"):
+            try:
+                delete_average(row_id)
+                st.session_state.confirm_delete_id = None
+                safe_toast("Eintrag gelöscht", "🗑️")
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Fehler beim Löschen: {exc}")
+    with c2:
+        if st.button("Abbrechen", use_container_width=True):
+            st.session_state.confirm_delete_id = None
+            st.rerun()
 
 
 st.markdown('<div class="page-title">Neue Averages erfassen</div>', unsafe_allow_html=True)
-st.markdown('<div class="page-subtitle">CRUD für Hanno und Dominik mit mobiler Historie und schnellem Bearbeiten.</div>', unsafe_allow_html=True)
+st.markdown('<div class="page-subtitle">Robuste CRUD-Seite mit schnellem Mobile-Flow, History-Edit und Delete-Confirm.</div>', unsafe_allow_html=True)
 
 new_tab, edit_tab = st.tabs(["Neu eintragen", "Historie bearbeiten"])
 
@@ -57,18 +95,18 @@ with new_tab:
         average = st.number_input("Average (3er Schnitt)", min_value=0.0, max_value=180.0, step=0.1, format="%.1f")
         comment = st.text_input("Kommentar (optional)", placeholder="z. B. Turnier, Warm-up, starke Doppel …")
 
-    if st.button("➕ Eintrag speichern", use_container_width=True, type="primary"):
+    save_disabled = average <= 0
+    if st.button("➕ Eintrag speichern", use_container_width=True, type="primary", disabled=save_disabled):
         try:
             insert_average(play_date, player, average, comment)
-            st.toast(f"{player} mit {average:.1f} gespeichert")
+            safe_toast(f"{player} mit {average:.1f} gespeichert", "🎯")
             st.rerun()
         except Exception as exc:
             st.error(f"Fehler beim Speichern: {exc}")
 
-    hist_df = load_history(limit=10)
+    hist_df = load_history(limit=12)
     if not hist_df.empty:
         st.markdown('<div class="section-label">Letzte Einträge</div>', unsafe_allow_html=True)
-        hist_df["play_date"] = pd.to_datetime(hist_df["play_date"]).dt.strftime("%d.%m.%Y")
         for _, row in hist_df.iterrows():
             avatar_class = "avatar-h" if row["player"] == "Hanno" else "avatar-d"
             initial = row["player"][0]
@@ -80,7 +118,7 @@ with new_tab:
                         <div class="avatar {avatar_class}">{initial}</div>
                         <div>
                             <div style="font-weight:800;">{row['player']} · {float(row['average']):.1f}</div>
-                            <div class="small-muted">{row['play_date']}</div>
+                            <div class="small-muted">{row['play_date'].strftime('%d.%m.%Y')}</div>
                         </div>
                     </div>
                     <div class="small-muted">ID {int(row['id'])}</div>
@@ -98,7 +136,7 @@ with edit_tab:
         st.info("Noch keine Einträge vorhanden.")
     else:
         history_df["label"] = history_df.apply(
-            lambda r: f"ID {int(r['id'])} · {pd.to_datetime(r['play_date']).strftime('%d.%m.%Y')} · {r['player']} · {float(r['average']):.1f}",
+            lambda r: f"ID {int(r['id'])} · {r['play_date'].strftime('%d.%m.%Y')} · {r['player']} · {float(r['average']):.1f}",
             axis=1,
         )
         selected_label = st.selectbox("Eintrag auswählen", history_df["label"].tolist())
@@ -122,15 +160,13 @@ with edit_tab:
             if st.button("💾 Update speichern", use_container_width=True):
                 try:
                     update_average(int(selected_row["id"]), new_avg, new_comment)
-                    st.toast("Eintrag aktualisiert")
+                    safe_toast("Eintrag aktualisiert", "✅")
                     st.rerun()
                 except Exception as exc:
                     st.error(f"Fehler beim Update: {exc}")
         with b2:
             if st.button("🗑️ Eintrag löschen", use_container_width=True):
-                try:
-                    delete_average(int(selected_row["id"]))
-                    st.toast("Eintrag gelöscht")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(f"Fehler beim Löschen: {exc}")
+                st.session_state.confirm_delete_id = int(selected_row["id"])
+
+        if st.session_state.confirm_delete_id == int(selected_row["id"]):
+            confirm_delete_dialog(int(selected_row["id"]), selected_label)

@@ -3,13 +3,20 @@ from urllib.parse import quote
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from supabase import create_client, Client
+from supabase import Client, create_client
 
 @st.cache_resource
 def init_connection() -> Client:
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 supabase = init_connection()
+
+
+def safe_toast(msg: str, icon: str | None = None):
+    try:
+        st.toast(msg, icon=icon)
+    except Exception:
+        st.success(msg)
 
 
 def load_data() -> pd.DataFrame:
@@ -24,28 +31,35 @@ def load_data() -> pd.DataFrame:
     if df.empty:
         return df
     df["play_date"] = pd.to_datetime(df["play_date"])
-    df["average"] = pd.to_numeric(df["average"])
+    df["average"] = pd.to_numeric(df["average"], errors="coerce")
+    df = df.dropna(subset=["average"])
     return df
 
 
 def kpis_for_player(df: pd.DataFrame, player: str) -> dict:
     p = df[df["player"] == player].sort_values(["play_date", "id"])
     if p.empty:
-        return {"mean": 0.0, "median": 0.0, "form": 0.0, "max": 0.0, "min": 0.0}
+        return {"mean": 0.0, "median": 0.0, "form": 0.0, "max": 0.0, "min": 0.0, "count": 0}
     return {
         "mean": p["average"].mean(),
         "median": p["average"].median(),
         "form": p["average"].tail(5).mean(),
         "max": p["average"].max(),
         "min": p["average"].min(),
+        "count": len(p),
     }
 
 
 def compute_head_to_head(df: pd.DataFrame) -> pd.DataFrame:
-    day_player = df.groupby(["play_date", "player"], as_index=False)["average"].mean()
-    pivot = day_player.pivot(index="play_date", columns="player", values="average").dropna()
-    if pivot.empty:
+    if df.empty:
         return pd.DataFrame({"player": ["Hanno", "Dominik"], "wins": [0, 0]})
+    per_day_player = df.groupby(["play_date", "player"], as_index=False)["average"].mean()
+    pivot = per_day_player.pivot(index="play_date", columns="player", values="average")
+    if "Hanno" not in pivot.columns:
+        pivot["Hanno"] = pd.NA
+    if "Dominik" not in pivot.columns:
+        pivot["Dominik"] = pd.NA
+    pivot = pivot.dropna(subset=["Hanno", "Dominik"])
     hanno_wins = int((pivot["Hanno"] > pivot["Dominik"]).sum())
     dominik_wins = int((pivot["Dominik"] > pivot["Hanno"]).sum())
     return pd.DataFrame({"player": ["Hanno", "Dominik"], "wins": [hanno_wins, dominik_wins]})
@@ -107,7 +121,7 @@ def df_to_csv_download(df: pd.DataFrame) -> bytes:
 
 
 st.markdown('<div class="page-title">Statistische Auswertung</div>', unsafe_allow_html=True)
-st.markdown('<div class="page-subtitle">Filter, KPIs, Head-to-Head und Export für eure Darts-Averages.</div>', unsafe_allow_html=True)
+st.markdown('<div class="page-subtitle">Mit robuster KPI-Logik, sauberen Tagessiegen und exportierbaren Auswertungen.</div>', unsafe_allow_html=True)
 
 df = load_data()
 if df.empty:
@@ -125,6 +139,10 @@ else:
     end_date = max_date
 
 filtered = df[(df["play_date"].dt.date >= start_date) & (df["play_date"].dt.date <= end_date)].copy()
+
+if filtered.empty:
+    st.warning("Im gewählten Zeitraum liegen keine Daten vor.")
+    st.stop()
 
 kpi_h = kpis_for_player(filtered, "Hanno")
 kpi_d = kpis_for_player(filtered, "Dominik")
@@ -149,7 +167,7 @@ with c7:
 with c8:
     st.metric("High Hanno", f"{kpi_h['max']:.1f}")
 with c9:
-    st.metric("High Dominik", f"{kpi_d['max']:.1f}")
+    st.metric("Low Dominik", f"{kpi_d['min']:.1f}")
 
 st.markdown('<div class="section-label">Head-to-Head</div>', unsafe_allow_html=True)
 h2h = compute_head_to_head(filtered)
@@ -164,20 +182,30 @@ bar_fig = px.bar(
 bar_fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
 st.plotly_chart(bar_fig, use_container_width=True)
 
-left, right = st.columns(2)
+left, right = st.columns([1.15, 0.85])
 with left:
     st.plotly_chart(make_line_chart(filtered), use_container_width=True)
     st.plotly_chart(make_daily_progression(filtered), use_container_width=True)
 with right:
     st.plotly_chart(make_histogram(filtered), use_container_width=True)
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
+    st.markdown('**Kurzüberblick**')
+    st.write(f"Hanno: {kpi_h['count']} Spiele · Mittelwert {kpi_h['mean']:.1f} · Top {kpi_h['max']:.1f}")
+    st.write(f"Dominik: {kpi_d['count']} Spiele · Mittelwert {kpi_d['mean']:.1f} · Top {kpi_d['max']:.1f}")
+    st.write(f"Tagessiege: Hanno {int(h2h.loc[h2h['player']=='Hanno','wins'].iloc[0])} · Dominik {int(h2h.loc[h2h['player']=='Dominik','wins'].iloc[0])}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="section-label">Export</div>', unsafe_allow_html=True)
 mail_subject = quote("Road to 180 – Statistik-Zusammenfassung")
 mail_body = quote(
-    f"Zeitraum: {start_date} bis {end_date}\n"
-    f"Hanno Ø: {kpi_h['mean']:.1f}\n"
-    f"Dominik Ø: {kpi_d['mean']:.1f}\n"
-    f"Tagessiege Hanno: {int(h2h.loc[h2h['player']=='Hanno','wins'].iloc[0])}\n"
+    f"Zeitraum: {start_date} bis {end_date}
+"
+    f"Hanno Ø: {kpi_h['mean']:.1f}
+"
+    f"Dominik Ø: {kpi_d['mean']:.1f}
+"
+    f"Tagessiege Hanno: {int(h2h.loc[h2h['player']=='Hanno','wins'].iloc[0])}
+"
     f"Tagessiege Dominik: {int(h2h.loc[h2h['player']=='Dominik','wins'].iloc[0])}"
 )
 mailto_link = f"mailto:?subject={mail_subject}&body={mail_body}"
@@ -186,4 +214,5 @@ ex1, ex2 = st.columns(2)
 with ex1:
     st.download_button("CSV herunterladen", data=df_to_csv_download(filtered), file_name="road_to_180_export.csv", mime="text/csv", use_container_width=True)
 with ex2:
-    st.link_button("Per E-Mail teilen", mailto_link, use_container_width=True)
+    if st.link_button("Per E-Mail teilen", mailto_link, use_container_width=True):
+        safe_toast("Mail-Entwurf geöffnet", "📧")
